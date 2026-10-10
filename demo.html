@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Treasury Agent — Reap sandbox demo</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --line: #243049;
+      --text: #e8eefc;
+      --muted: #93a0bb;
+      --ok: #3ee0a0;
+      --bad: #ff6b7a;
+      --warn: #ffd166;
+      --accent: #71f7ec;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: radial-gradient(1200px 500px at 20% -10%, #1a2a4a 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 28px 32px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    h1 { margin: 0; font-size: 22px; letter-spacing: .02em; }
+    .sub { color: var(--muted); font-size: 14px; margin-top: 6px; }
+    .treasury {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 18px;
+      min-width: 320px;
+    }
+    .treasury b { color: var(--accent); }
+    .bar {
+      margin-top: 10px;
+      height: 10px;
+      background: #1c2740;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 28%;
+      background: linear-gradient(90deg, #2ee6c6, #71f7ec);
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 16px;
+      padding: 24px 32px 40px;
+    }
+    @media (max-width: 1400px) { main { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+    article {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      min-height: 420px;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 99px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    h2 { margin: 12px 0 4px; font-size: 18px; }
+    .price { font-size: 26px; margin: 8px 0 16px; }
+    button {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: #16333a; }
+    button:disabled { opacity: .55; cursor: wait; }
+    ol.flow { list-style: none; padding: 0; margin: 22px 0 0; }
+    ol.flow li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #3a4a68;
+      flex: none;
+      margin-top: 1px;
+    }
+    li.go { color: var(--ok); }
+    li.go .dot { border-color: var(--ok); background: var(--ok); }
+    li.stop { color: var(--bad); }
+    li.stop .dot { border-color: var(--bad); background: var(--bad); }
+    li.wait { color: var(--warn); }
+    .result { margin-top: 16px; display: none; }
+    .result.show { display: block; }
+    .approval {
+      margin-bottom: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--accent);
+      background: #0e2a2c;
+    }
+    .approval.none {
+      border-color: var(--line);
+      background: #0e1626;
+    }
+    a.cta {
+      display: block;
+      margin-top: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      text-align: center;
+      background: #16333a;
+    }
+    a.cta:hover { background: #1c4450; }
+    .log {
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.45;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #0e1626;
+      border: 1px solid var(--line);
+    }
+    .api {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0a101c;
+    }
+    .api h3 {
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+    }
+    .step {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+    }
+    .step:last-child { border-bottom: 0; }
+    .step .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .pill {
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 99px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .pill.ok { color: var(--ok); border-color: var(--ok); }
+    .pill.bad { color: var(--bad); border-color: var(--bad); }
+    .pill.skip { color: var(--warn); border-color: var(--warn); }
+    pre {
+      margin: 6px 0 0;
+      padding: 8px;
+      max-height: 180px;
+      overflow: auto;
+      background: #070b14;
+      border-radius: 8px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #c9d6f0;
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Crypto Treasury Agent</h1>
+      <div class="sub">Use <code>python3 agent_logic.py --serve</code> then this page. Approval is Reap <code>collect.prava.space</code>, not the merchant cart.</div>
+    </div>
+    <div class="treasury">
+      <div>Wallet <code>0xEF72…4d53</code></div>
+      <div>Same wallet: <b>20 USDC</b> + <b>0.175 ETH</b> Sepolia ≈ $457</div>
+      <div class="sub">Ink ETH is gas only. Policy cap <b>$700</b>.</div>
+      <div class="bar" aria-hidden="true"><span></span></div>
+    </div>
+  </header>
+  <main>
+    <article>
+      <span class="tag">1 · USDC covers it</span>
+      <h2>beautybakerie.com</h2>
+      <div>Lip Whip Remover · US catalog</div>
+      <div class="price">$11.20 <span class="sub">quote ~$20</span></div>
+      <button type="button" data-run="pass">Run agent</button>
+      <ol class="flow" id="flow-pass">
+        <li data-step="1"><span class="dot"></span> Merchant on Reap list</li>
+        <li data-step="2"><span class="dot"></span> Under $700 cap</li>
+        <li data-step="3"><span class="dot"></span> 20 USDC covers spend</li>
+        <li data-step="4"><span class="dot"></span> Reap quote + approval URL</li>
+      </ol>
+      <div class="result" id="out-pass"></div>
+    </article>
+    <article>
+      <span class="tag">2 · ETH collateral</span>
+      <h2>abchome.com</h2>
+      <div>Amiko End Table · US catalog</div>
+      <div class="price">$279.00 <span class="sub">quote ~$303</span></div>
+      <button type="button" data-run="collateral">Run agent</button>
+      <ol class="flow" id="flow-collateral">
+        <li data-step="1"><span class="dot"></span> Merchant on Reap list</li>
+        <li data-step="2"><span class="dot"></span> Under $700 cap</li>
+        <li data-step="3"><span class="dot"></span> USDC 20 does not cover it</li>
+        <li data-step="4"><span class="dot"></span> Lock ~0.11 ETH of 0.175</li>
+        <li data-step="5"><span class="dot"></span> Reap quote + approval URL</li>
+      </ol>
+      <div class="result" id="out-collateral"></div>
+    </article>
+    <article>
+      <span class="tag">3 · Under cap, short ETH</span>
+      <h2>headphones.com</h2>
+      <div>Lewitt LW6 Wireless Headphones</div>
+      <div class="price">$699.00</div>
+      <button type="button" data-run="shortfall">Run agent</button>
+      <ol class="flow" id="flow-shortfall">
+        <li data-step="1"><span class="dot"></span> Merchant on Reap list</li>
+        <li data-step="2"><span class="dot"></span> $699 is under $700 cap</li>
+        <li data-step="3"><span class="dot"></span> Needs ~0.27 ETH, wallet has 0.175</li>
+        <li data-step="4"><span class="dot"></span> Reap is never called</li>
+      </ol>
+      <div class="result" id="out-shortfall"></div>
+    </article>
+    <article>
+      <span class="tag">4 · Over expense policy</span>
+      <h2>gmktec.com</h2>
+      <div>EVO-X5 Pro · 192GB + 2TB · US cart</div>
+      <div class="price">$6,599.00</div>
+      <button type="button" data-run="overcap">Run agent</button>
+      <ol class="flow" id="flow-overcap">
+        <li data-step="1"><span class="dot"></span> Merchant on Reap list</li>
+        <li data-step="2"><span class="dot"></span> $6,599 exceeds $700 cap</li>
+        <li data-step="3"><span class="dot"></span> Wallet unread / untouched</li>
+        <li data-step="4"><span class="dot"></span> Reap is never called</li>
+      </ol>
+      <div class="result" id="out-overcap"></div>
+    </article>
+  </main>
+  <script>
+    const copy = {
+      pass: { go: [1, 2, 3, 4] },
+      collateral: { go: [1, 2, 4, 5], stop: 3 },
+      shortfall: { go: [1, 2], stop: 3 },
+      overcap: { go: [1, 3, 4], stop: 2 }
+    };
+
+    function esc(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function reset(id) {
+      document.querySelectorAll("#" + id + " li").forEach((li) => {
+        li.className = "";
+      });
+    }
+
+    function paint(kind, spec) {
+      const flow = document.getElementById("flow-" + kind);
+      const max = flow.querySelectorAll("li").length;
+      for (let i = 1; i <= max; i++) {
+        const li = flow.querySelector('[data-step="' + i + '"]');
+        if (!li) continue;
+        if (spec.stop === i) li.className = "stop";
+        else if (spec.go.includes(i)) li.className = "go";
+        else if (spec.stop && i > spec.stop && !spec.go.includes(i)) li.className = "wait";
+      }
+      if (kind === "shortfall") {
+        flow.querySelector('[data-step="4"]').className = "stop";
+      }
+    }
+
+    function apiHtml(steps) {
+      if (!steps || !steps.length) return "";
+      const rows = steps.map((step) => {
+        const pill = step.skipped ? "skip" : step.ok ? "ok" : "bad";
+        const status = step.skipped
+          ? "skipped"
+          : (step.http_status != null ? "HTTP " + step.http_status : (step.ok ? "ok" : "blocked"));
+        let body = "";
+        if (step.request) body += "<pre>req " + esc(JSON.stringify(step.request, null, 2)) + "</pre>";
+        if (step.response && Object.keys(step.response).length) {
+          body += "<pre>res " + esc(JSON.stringify(step.response, null, 2)) + "</pre>";
+        }
+        return (
+          '<div class="step">' +
+            '<div class="meta">' +
+              '<span class="pill">' + esc(step.layer) + "</span>" +
+              '<span class="pill ' + pill + '">' + esc(status) + "</span>" +
+              "<strong>" + esc(step.title) + "</strong>" +
+            "</div>" +
+            (step.detail ? '<div class="sub">' + esc(step.detail) + "</div>" : "") +
+            body +
+          "</div>"
+        );
+      });
+      return '<div class="api"><h3>Backend · agent → chain RPC → Reap API</h3>' + rows.join("") + "</div>";
+    }
+
+    function resultHtml(data) {
+      let html = "";
+      if (data.approval_url) {
+        html +=
+          '<div class="approval">' +
+            "<div><b>Payment verification</b> — Reap hosted collect (not the Shopify cart)</div>" +
+            '<a class="cta" href="' + esc(data.approval_url) + '" target="_blank" rel="noopener">Open approval link</a>' +
+            '<div class="sub">Checkout ' + esc(data.checkout_status || "") +
+              " · " + esc(data.checkout_id || "") +
+              " · quote " + esc(data.quote_id || "") + "</div>" +
+          "</div>";
+      } else {
+        html +=
+          '<div class="approval none">' +
+            "<div><b>No approval URL</b></div>" +
+            '<div class="sub">' +
+              esc(
+                data.approved === false
+                  ? "Stopped at the $700 expense cap. Reap was not called."
+                  : "Stopped at treasury. Reap was not called."
+              ) +
+            "</div>" +
+          "</div>";
+      }
+      if (data.log) html += '<div class="log">' + esc(data.log) + "</div>";
+      html += apiHtml(data.api);
+      return html;
+    }
+
+    async function play(kind, btn) {
+      const out = document.getElementById("out-" + kind);
+      reset("flow-" + kind);
+      out.classList.add("show");
+      const live = kind === "pass" || kind === "collateral";
+      out.innerHTML = live
+        ? '<div class="log">Calling Reap sandbox… POST /agentic/quotes then /agentic/checkouts (20–40s). The approval link appears here when checkout returns.</div>'
+        : '<div class="log">Running guardrails + treasury (no Reap call)…</div>';
+      btn.disabled = true;
+      let data;
+      try {
+        const res = await fetch("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ case: kind })
+        });
+        data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+      } catch (err) {
+        btn.disabled = false;
+        paint(kind, copy[kind]);
+        out.innerHTML =
+          '<div class="log">Could not reach the demo API. Run <code>python3 agent_logic.py --serve</code> and open <code>http://127.0.0.1:8765/</code> — not the HTML file.<br>' +
+          esc(err.message || err) +
+          "</div>";
+        return;
+      }
+      paint(kind, copy[kind]);
+      out.innerHTML = resultHtml(data);
+      const link = out.querySelector("a.cta");
+      if (link) link.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      btn.disabled = false;
+    }
+
+    document.querySelectorAll("button[data-run]").forEach((btn) => {
+      btn.addEventListener("click", () => play(btn.dataset.run, btn));
+    });
+  </script>
+</body>
+</html>

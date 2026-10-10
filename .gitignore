@@ -1,0 +1,7 @@
+.env
+.env.local
+.DS_Store
+__pycache__/
+*.pyc
+sandbox-runs.jsonl
+kwal-skill/.git/
